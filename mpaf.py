@@ -7,15 +7,8 @@ from morph import erosion, dilation, opening, closing
 
 import matplotlib.pyplot as plt
 
-def band_to_anomaly_score(band, BA, se1, se2, se3, k):
-    x_dim, y_dim = np.shape(band)
-    norm_band = band
-    # norm_band = normalize(band)
-
-    if BA:
-        R = dilation((norm_band - opening(norm_band, se1)), se2)
-    else:
-        R = dilation((closing(norm_band, se1) - norm_band), se2)
+def diff_map(norm_band, BA, k):
+    x_dim, y_dim = np.shape(norm_band)
 
     if BA:
         thinned_image = np.zeros((x_dim, y_dim))
@@ -46,8 +39,20 @@ def band_to_anomaly_score(band, BA, se1, se2, se3, k):
         
         D = thickened_image - norm_band
 
+    return D
+
+def band_to_anomaly_score(norm_band, BA, se1, se2, se3, k):
+
+    if BA:
+        R = dilation((norm_band - opening(norm_band, se1)), se2)
+    else:
+        R = dilation((closing(norm_band, se1) - norm_band), se2)
+
+    D = diff_map(norm_band, BA, k)
+
     O = R * dilation(D, se3)
 
+    # Normalize the anomaly scores 
     min_val = np.min(O)
     max_val = np.max(O)
     O = (O - min_val) / (max_val - min_val)
@@ -125,34 +130,7 @@ def area_selection(norm_band, BA):
     N_pixels = x_dim * y_dim
     k = N_pixels / 100
     
-    if BA:
-        thinned_image = np.zeros((x_dim, y_dim))
-        grayscale_levels = [x/50 for x in range(1, 51)]
-        for gray_level in grayscale_levels:
-            bin_image = tresh(norm_band, gray_level, geq=True)
-            _, area_image = connected_components(bin_image)
-            comp_removed_image = bin_image & (area_image > k)
-
-            for y in range(y_dim):
-                for x in range(x_dim):
-                    if comp_removed_image[y][x] == True:
-                        thinned_image[y][x] = gray_level
-
-        D = norm_band - thinned_image
-    else:
-        thickened_image = np.ones((x_dim, y_dim))
-        grayscale_levels = [x/50 for x in range(1, 51)]
-        for gray_level in reversed(grayscale_levels):
-            bin_image = tresh(norm_band, gray_level, geq=False)
-            _, area_image = connected_components(bin_image)
-            comp_removed_image = bin_image & (area_image > k)
-
-            for y in range(y_dim):
-                for x in range(x_dim):
-                    if comp_removed_image[y][x] == True:
-                        thickened_image[y][x] = gray_level
-        
-        D = thickened_image - norm_band
+    D = diff_map(norm_band, BA, k)
 
     otsu_level = otsu(D)
 
@@ -163,6 +141,7 @@ def area_selection(norm_band, BA):
     edges_table = {}
     area_table = {}
 
+    # Find bounding boxes for each component
     for y in range(y_dim):
         for x in range(x_dim):
             if id_image[y][x] > 0:
@@ -193,6 +172,7 @@ def area_selection(norm_band, BA):
     
     new_k = np.power(np.sqrt(A_k), 2)
 
+    # Find the largest edge from bounding boxes
     largest_edge = 0
     for id, area in area_table.items():
         if area == A_k:
@@ -208,8 +188,6 @@ def area_selection(norm_band, BA):
 
 def MPAF(hsi, s_dim, t, u, alpha, beta, se2, se3):
     band_norm, BA = band_selection(hsi, s_dim, t, u, alpha, beta)
-
-    # band_norm = normalize(band)
 
     k, se1 = area_selection(band_norm, BA)
 
