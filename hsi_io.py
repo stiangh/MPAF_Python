@@ -47,9 +47,3 @@ def pixel_plot(data, grey=False):
         fig = plt.imshow(data, interpolation='none')
     plt.colorbar(fig)
     plt.show(fig)
-
-if __name__ == "__main__":
-    filename = ABU_FILES[0]
-    _, hsi, truth = import_hsi(filename)
-    pixel_plot(hsi[100])
-    pixel_plot(truth, grey=True)

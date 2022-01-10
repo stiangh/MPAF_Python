@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.core.numerictypes import maximum_sctype
 
 def normalize(in_image):
     s = np.std(in_image)
@@ -49,48 +48,3 @@ def otsu(in_image):
             thr = t
 
     return gray_levels[thr]
-
-if __name__ == "__main__":
-    from hsi_io import import_hsi, ABU_FILES
-    import matplotlib.pyplot as plt
-
-    _, hsi, _ = import_hsi(ABU_FILES[0])
-
-    band = hsi[4]
-    band_norm = normalize(band)
-    otsu_val = otsu(band_norm)
-
-    print(f'Otsu: {otsu_val}')
-
-    plt.figure(1)
-    plt.subplot(1, 2, 1)
-    plt.imshow(band_norm)
-    plt.title('Normalized')
-
-    plt.subplot(1, 2, 2)
-    plt.imshow(band_norm >= 0.8)
-    plt.title('Otsu binary')
-
-    
-    min_val = np.min(band)
-    max_val = np.max(band)
-
-    band = (band - min_val)
-    if max_val != min_val:
-        band = band / (max_val - min_val)
-
-    normalized = normalize(band)
-
-    plt.figure(2)
-
-    plt.subplot(1, 2, 1)
-    plt.imshow(band / np.max(band), interpolation='none')
-    plt.title('Original')
-    plt.colorbar()
-
-    plt.subplot(1, 2, 2)
-    plt.imshow(normalized / np.max(normalized), interpolation='none')
-    plt.title('Normalized')
-    plt.colorbar()
-
-    plt.show()

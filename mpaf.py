@@ -1,11 +1,8 @@
 import numpy as np
 
-from hsi_io import import_hsi, ABU_FILES
 from stats import normalize, entropy, otsu
 from attribute import tresh, connected_components
-from morph import erosion, dilation, opening, closing
-
-import matplotlib.pyplot as plt
+from morph import dilation, opening, closing
 
 def diff_map(norm_band, BA, k):
     x_dim, y_dim = np.shape(norm_band)
@@ -194,87 +191,3 @@ def MPAF(hsi, s_dim, t, u, alpha, beta, se2, se3):
     O, _, _ = band_to_anomaly_score(band_norm, BA, se1, se2, se3, k)
 
     return O
-
-if __name__ == "__main__":
-    filename = ABU_FILES[0]
-    [x_dim, y_dim, s_dim], hsi, truth = import_hsi(filename)
-    
-    print(f'name:\t{filename[9:-4]}')
-
-    band, BA = band_selection(hsi, s_dim, 10, 5, 0.15, 0.04)
-
-    se1, se2, se3, k = 3, 3, 5, 15
-
-    O, R, D = band_to_anomaly_score(band, BA, se1, se2, se3, k)
-
-    plt.figure(1)
-
-    plt.subplot(2, 3, 1)
-    plt.imshow(band)
-    plt.title('Original')
-
-    plt.subplot(2, 3, 2)
-    plt.imshow(R)
-    plt.title('MP')
-
-    plt.subplot(2, 3, 3)
-    plt.imshow(D)
-    plt.title('Diff Map')
-
-    plt.subplot(2, 3, 4)
-    plt.imshow(O, cmap='Greys_r')
-    plt.title('Output')
-
-    plt.subplot(2, 3, 6)
-    plt.imshow(truth, cmap='Greys_r')
-    plt.title('Reference')
-
-    TPRS = []
-    FPRS = []
-    best_tresh = None
-    best_perf = 0
-    best_perf_tpr = None
-    best_perf_fpr = None
-    for t in [x/100 for x in range(0, 101)]:
-        anomalies = O >= t
-        TP = 0
-        TN = 0
-        FP = 0
-        FN = 0
-        for y in range(y_dim):
-            for x in range(x_dim):
-                if anomalies[y][x] == True:
-                    if truth[y][x] == True:
-                        TP += 1
-                    else:
-                        FP += 1
-                else:
-                    if truth[y][x] == True:
-                        FN += 1
-                    else:
-                        TN += 1
-        TPR = TP / (TP + FN)
-        FPR = FP / (FP + TN)
-        TPRS.append(TPR)
-        FPRS.append(FPR)
-        perf = TP+TN
-        if perf > best_perf:
-            best_perf = perf
-            best_tresh = t
-            best_tresh_tpr = TPR
-            best_tresh_fpr = FPR
-
-    plt.subplot(2, 3, 5)
-    plt.imshow(O > best_tresh, cmap='Greys_r')
-    plt.title('Best treshold')
-    
-    plt.figure(2)
-    plt.plot(FPRS, TPRS)
-
-    plt.show()
-
-    AUC = - np.trapz(TPRS, FPRS)
-    print(f'AUC:\t\t{AUC}')
-    print(f'best_tresh:\t\t{best_tresh}')
-    print(f'best_tresh_fpr:\t{best_tresh_fpr}')
-    print(f'best_tresh_tpr:\t{best_tresh_tpr}')

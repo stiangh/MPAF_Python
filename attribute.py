@@ -14,7 +14,6 @@ def connected_components(in_image):
     x_dim, y_dim = np.shape(in_image)
 
     id_image = np.zeros((x_dim, y_dim), dtype='int')
-    area_image = np.zeros((x_dim, y_dim), dtype='int')
 
     next_id = 1
     connection_table = {}
@@ -78,6 +77,7 @@ def connected_components(in_image):
             area_table[pointer_id] += area_table[key_id]
 
     # Update ids and write area image
+    area_image = np.zeros((x_dim, y_dim), dtype='int')
     for y in range(y_dim):
         for x in range(x_dim):
             if id_image[y][x] > 0:
@@ -87,30 +87,3 @@ def connected_components(in_image):
                 area_image[y][x] = area_table[pixel_id]
             
     return id_image, area_image
-
-if __name__ == "__main__":
-    import matplotlib as mpl
-    import matplotlib.pyplot as plt
-
-    x_dim, y_dim = 20, 20
-    A = np.random.random((x_dim, y_dim))
-    B = A >= 0.7
-
-    id_image, area_image = connected_components(B)
-
-    cmap = mpl.cm.get_cmap('viridis')
-    cmap.set_under(color='black')
-
-    plt.subplot(1, 3, 1)
-    plt.imshow(B, vmin=0.1)
-    plt.title('Input')
-
-    plt.subplot(1, 3, 2)
-    plt.imshow(id_image, vmin=0.1)
-    plt.title('Connected IDs')
-
-    plt.subplot(1, 3, 3)
-    plt.imshow(area_image, vmin=0.1)
-    plt.title('Connected Area')
-
-    plt.show()
